@@ -222,11 +222,11 @@
     })
 
     // Helper functions for manipulating tiles
-    function readRow(row) {
+    function readRowColors(row) {
       return row.map(tile => colorAbbrevs[tile.dataset.color]).join('')
     }
 
-    function writeRow(row, word) {
+    function writeRowWord(row, word) {
       for (let i = 0; i < 5; i++) {
         row[i].innerText = word[i]
       }
@@ -256,11 +256,12 @@
       const scores = scoreAllWords(answer)
 
       for (const row of tiles) {
-        const score = readRow(row)
+        const score = readRowColors(row)
         const candidates = scores[score]
         if (candidates) {
-          writeRow(row, randomPick(candidates))
+          writeRowWord(row, randomPick(candidates))
         }
+        // if there is no solution for this row then leave it blank
       }
 
       showingLetters = true
@@ -270,6 +271,8 @@
       return items[Math.floor(Math.random() * items.length)]
     }
 
+    // Counts the frequency of each letter in the word. For example,
+    // countLetters('gorge') returns { g: 2, o: 1, r: 1, e: 1 }
     function countLetters(answer) {
       const counts = {}
       for (const letter of answer) {
@@ -282,16 +285,30 @@
       return counts
     }
 
+    // Given a word, an answer, and the counts of the letters in the answer,
+    // find the colors that Wordle will give each letter, encoded as a string.
+    // For example, scoreWord('gulag', 'gorge', countLetters('gorge'))
+    // returns 'CAAAP' where C is green, A is gray, and P is yellow
     function scoreWord(word, answer, answerLetters) {
       let score = ''
+
+      // When the answer/guess have duplicate letters (e.g. "tease" has two E's)
+      // Wordle has to decide how to color them. If a letter appears N times in
+      // the answer, then there can be at most N green/yellow tiles with that
+      // letter, and further appearances are colored gray.
+      //
+      // We implement this by keeping a counter of each letter in the answer,
+      // and decrementing the count each time we encounter a letter in the guess
       counts = { ...answerLetters }
 
+      // Correct tiles (green) are evaluated first
       for (let i = 0; i < 5; i++) {
         if (word[i] === answer[i]) {
           counts[word[i]]--
         }
       }
 
+      // The rest (yellow and gray tiles) are evaluated left to right
       for (let i = 0; i < 5; i++) {
         if (word[i] === answer[i]) {
           score += colorAbbrevs['green']
@@ -302,6 +319,7 @@
           score += colorAbbrevs['gray']
         }
       }
+
       return score
     }
 
