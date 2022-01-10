@@ -251,6 +251,7 @@
     // Find solutions
     form.addEventListener('submit', function(event) {
       event.preventDefault()
+      clearLetters(tiles)
 
       const answer = answerInput.value.toLowerCase()
       const scores = scoreAllWords(answer)
