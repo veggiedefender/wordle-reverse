@@ -12,6 +12,10 @@
     font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
   }
 
+  body {
+    margin: 0 24px;
+  }
+
   .container {
     width: 100%;
     max-width: 500px;
@@ -29,18 +33,35 @@
     display: grid;
     grid-gap: 5px;
     grid-template-rows: repeat(6, 1fr);
-    height: 420px;
-    width: 350px;
     margin-right: 16px;
+    width: 350px;
   }
 
   .row {
     display: grid;
     grid-gap: 5px;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
+    position: relative;
+  }
+
+  .info {
+    align-items: center;
+    border-radius: 8px;
+    color: #787c7e;
+    cursor: pointer;
+    display: flex;
+    font-family: monospace;
+    justify-content: center;
+  }
+  .info:hover {
+    background-color: #f7f7f7;
+  }
+  .info:not([data-candidates]) {
+    pointer-events: none;
   }
 
   .tile {
+    -webkit-tap-highlight-color: transparent;
     align-items: center;
     box-sizing: border-box;
     color: #fff;
@@ -92,6 +113,17 @@
     font-family: monospace;
     text-transform: uppercase;
   }
+
+  #reset {
+    margin-bottom: 16px;
+  }
+
+  #candidates {
+    column-count: auto;
+    column-width: 7ch;
+    list-style: none;
+    padding-left: 0;
+  }
   </style>
 </head>
 <body>
@@ -101,6 +133,7 @@
     <div class="game">
       <div class="board">
         <div class="row">
+          <div class="info" data-y="0">#</div>
           <div class="tile" data-color="gray" data-y="0" data-x="0"></div>
           <div class="tile" data-color="gray" data-y="0" data-x="1"></div>
           <div class="tile" data-color="gray" data-y="0" data-x="2"></div>
@@ -108,6 +141,7 @@
           <div class="tile" data-color="gray" data-y="0" data-x="4"></div>
         </div>
         <div class="row">
+          <div class="info" data-y="1">#</div>
           <div class="tile" data-color="gray" data-y="1" data-x="0"></div>
           <div class="tile" data-color="gray" data-y="1" data-x="1"></div>
           <div class="tile" data-color="gray" data-y="1" data-x="2"></div>
@@ -115,6 +149,7 @@
           <div class="tile" data-color="gray" data-y="1" data-x="4"></div>
         </div>
         <div class="row">
+          <div class="info" data-y="2">#</div>
           <div class="tile" data-color="gray" data-y="2" data-x="0"></div>
           <div class="tile" data-color="gray" data-y="2" data-x="1"></div>
           <div class="tile" data-color="gray" data-y="2" data-x="2"></div>
@@ -122,6 +157,7 @@
           <div class="tile" data-color="gray" data-y="2" data-x="4"></div>
         </div>
         <div class="row">
+          <div class="info" data-y="3">#</div>
           <div class="tile" data-color="gray" data-y="3" data-x="0"></div>
           <div class="tile" data-color="gray" data-y="3" data-x="1"></div>
           <div class="tile" data-color="gray" data-y="3" data-x="2"></div>
@@ -129,6 +165,7 @@
           <div class="tile" data-color="gray" data-y="3" data-x="4"></div>
         </div>
         <div class="row">
+          <div class="info" data-y="4">#</div>
           <div class="tile" data-color="gray" data-y="4" data-x="0"></div>
           <div class="tile" data-color="gray" data-y="4" data-x="1"></div>
           <div class="tile" data-color="gray" data-y="4" data-x="2"></div>
@@ -136,6 +173,7 @@
           <div class="tile" data-color="gray" data-y="4" data-x="4"></div>
         </div>
         <div class="row">
+          <div class="info" data-y="5">#</div>
           <div class="tile" data-color="gray" data-y="5" data-x="0"></div>
           <div class="tile" data-color="gray" data-y="5" data-x="1"></div>
           <div class="tile" data-color="gray" data-y="5" data-x="2"></div>
@@ -158,6 +196,9 @@
     </form>
 
     <button id="reset">Reset tiles</button>
+
+    <h3 id="candidates-title" style="display: none;">Word possibilities:</h3>
+    <ul id="candidates"></ul>
   </div>
   <script>
     const $ = document.querySelector.bind(document)
@@ -179,6 +220,8 @@
     const form = $('#answer-form')
     const answerInput = $('#answer')
     const resetButton = $('#reset')
+    const candidatesTitle = $('#candidates-title')
+    const candidatesUl = $('#candidates')
 
     const colorButtons = {
       gray: $('#gray'),
@@ -194,6 +237,8 @@
       [null, null, null, null, null],
       [null, null, null, null, null]
     ]
+
+    const infos = [null, null, null, null, null, null]
 
     // Set up color palette buttons
     for (const [color, btn] of Object.entries(colorButtons)) {
@@ -211,15 +256,26 @@
       tile.addEventListener('click', function() {
         if (showingLetters) {
           clearLetters(tiles)
+          clearInfos(infos)
           showingLetters = false
         }
         tile.dataset.color = activeColor
       })
     }
 
+    // Set up info
+    for (const info of $$('.info')) {
+      infos[info.dataset.y] = info
+      info.addEventListener('click', function() {
+        renderCandidates(info.dataset.candidates)
+      })
+    }
+
     resetButton.addEventListener('click', function() {
       clearLetters(tiles)
       clearColors(tiles)
+      clearInfos(infos)
+      clearCandidates()
     })
 
     // Helper functions for manipulating tiles
@@ -249,6 +305,35 @@
       }
     }
 
+    function clearInfos(infos) {
+      for (const info of infos) {
+        info.innerText = '#'
+        delete info.dataset.candidates
+      }
+    }
+
+    function clearCandidates() {
+      candidatesTitle.style.display = 'none'
+      while (candidatesUl.firstChild) {
+        candidatesUl.firstChild.remove()
+      }
+    }
+
+    // Render candidates to the word possibilities list
+    function renderCandidates(candidates) {
+      clearCandidates()
+
+      if (candidates) {
+        candidatesTitle.style.display = 'block'
+
+        for (const word of candidates.split(',')) {
+          const li = document.createElement('li')
+          li.innerText = word
+          candidatesUl.appendChild(li)
+        }
+      }
+    }
+
     // Find solutions
     form.addEventListener('submit', function(event) {
       event.preventDefault()
@@ -257,13 +342,18 @@
       const answer = answerInput.value.toLowerCase()
       const scores = scoreAllWords(answer)
 
-      for (const row of tiles) {
+      for (let i = 0; i < 6; i++) {
+        const row = tiles[i]
         const score = readRowColors(row)
-        const candidates = scores[score]
-        if (candidates) {
+        const candidates = scores[score] || []
+        if (candidates.length > 0) {
           writeRowWord(row, randomPick(candidates))
+          infos[i].dataset.candidates = candidates.join(',')
+        } else {
+          delete infos[i].dataset.candidates
         }
-        // if there is no solution for this row then leave it blank
+
+        infos[i].innerText = candidates.length
       }
 
       showingLetters = true
